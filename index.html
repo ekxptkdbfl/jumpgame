@@ -15,6 +15,23 @@
 <body>
     <canvas id="gameCanvas"></canvas>
 
+    <button id="sound-button">
+        <svg viewBox="0 0 24 24" width="30" height="30">
+            <path fill="white" d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.84 14,18.7V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.76 16.5,12M3,9V15H7L12,20V4L7,9H3Z" />
+        </svg>
+    </button>
+
+    <div id="settings-menu" class="hidden menu">
+        <div class="menu-content">
+            <h1 class="menu-title" style="font-size: 30px;">소리 설정</h1>
+            <div class="button-group">
+                <button id="toggle-bgm-btn">배경음악: ON</button>
+                <button id="toggle-sfx-btn">효과음: ON</button>
+                <button id="close-settings-btn" class="home-style">닫기</button>
+            </div>
+        </div>
+    </div>
+
     <button id="pause-button" class="hidden">
         <svg viewBox="0 0 24 24" width="30" height="30">
             <path fill="white" d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z" />
@@ -60,27 +77,8 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // 서비스 워커 파일명 뒤에도 버전을 붙여 업데이트를 강제합니다.
                 navigator.serviceWorker.register('service-worker.js?v=20260103')
-                .then(registration => {
-                    console.log('서비스 워커 등록 성공:', registration.scope);
-                    
-                    // 새 버전이 있는지 체크
-                    registration.onupdatefound = () => {
-                        const installingWorker = registration.installing;
-                        installingWorker.onstatechange = () => {
-                            if (installingWorker.state === 'installed') {
-                                if (navigator.serviceWorker.controller) {
-                                    // 새 버전이 설치되었음을 알리고 새로고침 제안
-                                    console.log('새로운 버전이 준비되었습니다. 새로고침 해주세요.');
-                                }
-                            }
-                        };
-                    };
-                })
-                .catch(error => {
-                    console.log('서비스 워커 등록 실패:', error);
-                });
+                .catch(error => console.log('SW 등록 실패:', error));
             });
         }
     </script>

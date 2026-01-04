@@ -1,21 +1,97 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+
+// UI 요소
 const mainMenu = document.getElementById('main-menu');
 const gameOverMenu = document.getElementById('game-over-menu');
 const pauseMenu = document.getElementById('pause-menu');
+const settingsMenu = document.getElementById('settings-menu'); 
 const pauseBtn = document.getElementById('pause-button');
-const startBtn = document.getElementById('start-button');
-const restartBtn = document.getElementById('restart-button');
-const restartPauseBtn = document.getElementById('restart-pause-button');
-const continueBtn = document.getElementById('continue-button');
-const homeBtn = document.getElementById('home-button');
-const exitToMainBtn = document.getElementById('exit-to-main-button');
+const soundBtn = document.getElementById('sound-button');
 const finalScoreText = document.getElementById('final-score-val');
 
-// --- [게임 시스템 설정] ---
+// 설정 버튼들
+const toggleBgmBtn = document.getElementById('toggle-bgm-btn');
+const toggleSfxBtn = document.getElementById('toggle-sfx-btn');
+const closeSettingsBtn = document.getElementById('close-settings-btn');
+
+// --- [오디오 시스템] ---
+const bgmAudio = new Audio('bgm.mp3');
+bgmAudio.loop = true; 
+bgmAudio.volume = 0.5; 
+
+const jumpAudio = new Audio('jump.mp3');
+const gameOverAudio = new Audio('gameover.mp3');
+const hawkAudio = new Audio('hawk.mp3');
+
+// 오디오 상태 변수
+let isBgmMuted = false;
+let isSfxMuted = false;
+
+// --- [초기화: 메인 화면 소리 재생] ---
+function initAudioContext() {
+    if (!isBgmMuted && bgmAudio.paused) {
+        bgmAudio.play().catch(e => {});
+    }
+    document.removeEventListener('click', initAudioContext);
+    document.removeEventListener('keydown', initAudioContext);
+}
+document.addEventListener('click', initAudioContext);
+document.addEventListener('keydown', initAudioContext);
+
+
+// --- [UI 이벤트 리스너] ---
+document.getElementById('start-button').addEventListener('click', startGame);
+document.getElementById('restart-button').addEventListener('click', startGame);
+document.getElementById('restart-pause-button').addEventListener('click', startGame);
+document.getElementById('continue-button').addEventListener('click', () => { 
+    isPaused = false; 
+    pauseMenu.classList.add('hidden'); 
+    soundBtn.classList.add('hidden'); 
+});
+document.getElementById('home-button').addEventListener('click', goToMain);
+document.getElementById('exit-to-main-button').addEventListener('click', goToMain);
+pauseBtn.addEventListener('click', (e) => { e.stopPropagation(); togglePause(); });
+
+// [소리 설정 관련 로직]
+soundBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    settingsMenu.classList.remove('hidden'); 
+});
+
+closeSettingsBtn.addEventListener('click', () => {
+    settingsMenu.classList.add('hidden'); 
+});
+
+toggleBgmBtn.addEventListener('click', () => {
+    isBgmMuted = !isBgmMuted;
+    bgmAudio.muted = isBgmMuted;
+    
+    if (!isBgmMuted && bgmAudio.paused) {
+        bgmAudio.play().catch(e => {});
+    }
+
+    toggleBgmBtn.innerText = `배경음악: ${isBgmMuted ? 'OFF' : 'ON'}`;
+    toggleBgmBtn.style.backgroundColor = isBgmMuted ? '#e74c3c' : '#f39c12';
+});
+
+toggleSfxBtn.addEventListener('click', () => {
+    isSfxMuted = !isSfxMuted;
+    jumpAudio.muted = isSfxMuted;
+    gameOverAudio.muted = isSfxMuted;
+    hawkAudio.muted = isSfxMuted;
+    toggleSfxBtn.innerText = `효과음: ${isSfxMuted ? 'OFF' : 'ON'}`;
+    toggleSfxBtn.style.backgroundColor = isSfxMuted ? '#e74c3c' : '#f39c12';
+});
+
+
+// --- [게임 변수] ---
 let score = 0;           
 let obstaclesPassed = 0; 
-let highScore = 0;
+
+// [최고점수 불러오기]
+let highScore = Number(localStorage.getItem('penguinHighScore')) || 0;
+
 const BASE_CITY_SPEED = 3.86;  
 let citySpeed = BASE_CITY_SPEED;
 let isGameOver = false;
@@ -24,35 +100,24 @@ let isPaused = false;
 let keys = {};
 let roadOffset = 0;
 
-// --- [환경 및 낮밤 변수] ---
 let targetEnv = 0; let currentEnv = 0; 
-
-// --- [스폰 시스템 변수] ---
 let spawnTimer = 0; let nextSpawnTime = 150; let longGapEnforceCount = 0; 
 let fastEventActive = false; let fastEventTimer = 0; const EVENT_DURATION = 360; 
 let fastCarSpawnFrame = 0; let lastFastMilestone = 0;
 
 // --- [매 습격 시스템 변수] ---
-let hawkState = 'none'; // 'none', 'patrolling', 'attacking', 'carrying', 'leaving'
+let hawkState = 'none'; 
 let lastHawkCheckScore = 800; 
 let isShortCarMode = false; 
 let hawkX = 0, hawkY = 0;
-let hawkSpeed = 5; 
+let hawkSpeed = 5;
+// [추가됨] 매 활동 시간 타이머 (반응 지연용)
+let hawkActiveTimer = 0; 
 
-// ==========================================
-// [이미지 로딩 설정]
-// ==========================================
 const hawkImage = new Image();
 hawkImage.src = 'hawk.png'; 
-
 let isHawkLoaded = false;
-hawkImage.onload = function() {
-    isHawkLoaded = true;
-    console.log("매 이미지 로딩 성공!");
-};
-hawkImage.onerror = function() {
-    console.log("매 이미지 로딩 실패! hawk.png 파일을 확인하세요.");
-};
+hawkImage.onload = function() { isHawkLoaded = true; };
 
 let wasInAir = false; 
 let buildings = []; let backBuildings = []; let stars = []; let clouds = []; let cars = [];
@@ -72,9 +137,9 @@ function getGroundY() {
 }
 
 function resizeCanvas() {
-    const container = document.getElementById('game-container') || document.body;
-    canvas.width = container.clientWidth || window.innerWidth;
-    canvas.height = container.clientHeight || window.innerHeight;
+    const container = document.body;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
     const groundY = getGroundY();
     const penguinSize = Math.max(20, Math.min(60, Math.floor(canvas.height * 0.035)));
@@ -167,21 +232,40 @@ function requestFullScreen() {
 function goToMain() {
     isGameStarted = false; isGameOver = false; isPaused = false;
     mainMenu.classList.remove('hidden'); gameOverMenu.classList.add('hidden'); pauseMenu.classList.add('hidden'); pauseBtn.classList.add('hidden');
+    soundBtn.classList.remove('hidden'); 
+    
     if (score > highScore) highScore = score; 
+    
+    if (!isBgmMuted && bgmAudio.paused) {
+        bgmAudio.play().catch(e=>{});
+    }
 }
 
 function togglePause() {
     if (!isGameStarted || isGameOver) return;
     isPaused = !isPaused;
-    if (isPaused) pauseMenu.classList.remove('hidden');
-    else pauseMenu.classList.add('hidden');
+    if (isPaused) {
+        pauseMenu.classList.remove('hidden');
+        soundBtn.classList.remove('hidden'); 
+    } else {
+        pauseMenu.classList.add('hidden');
+        soundBtn.classList.add('hidden'); 
+    }
 }
 
 function startGame() {
     if (window.innerWidth <= 768) requestFullScreen();
     mainMenu.classList.add('hidden'); gameOverMenu.classList.add('hidden'); pauseMenu.classList.add('hidden');
     pauseBtn.classList.remove('hidden');
-    isGameStarted = true; isPaused = false; resetCityGame();
+    soundBtn.classList.add('hidden'); 
+
+    isGameStarted = true; isPaused = false; 
+    
+    if (!isBgmMuted && bgmAudio.paused) {
+        bgmAudio.play().catch(e => console.log("재생 정책 확인"));
+    }
+
+    resetCityGame();
 }
 
 function resetCityGame() {
@@ -191,21 +275,13 @@ function resetCityGame() {
     nextSpawnTime = 150; longGapEnforceCount = 0;
     citySpeed = BASE_CITY_SPEED; 
     
-    // 매 초기화
     hawkState = 'none'; hawkTimer = 0; isShortCarMode = false; lastHawkCheckScore = 800; 
+    hawkActiveTimer = 0; // [추가됨] 타이머 초기화
     hawkSpeed = 6; 
 
     penguin.visible = true;
     isGameOver = false; isPaused = false; wasInAir = false; resizeCanvas();
 }
-
-startBtn.addEventListener('click', startGame);
-restartBtn.addEventListener('click', startGame);
-restartPauseBtn.addEventListener('click', startGame);
-continueBtn.addEventListener('click', () => { isPaused = false; pauseMenu.classList.add('hidden'); });
-pauseBtn.addEventListener('click', (e) => { e.stopPropagation(); togglePause(); });
-homeBtn.addEventListener('click', goToMain);
-exitToMainBtn.addEventListener('click', goToMain);
 
 function lerpColor(c1, c2, f) { return [Math.floor(c1[0] + (c2[0] - c1[0]) * f), Math.floor(c1[1] + (c2[1] - c1[1]) * f), Math.floor(c1[2] + (c2[2] - c1[2]) * f)]; }
 
@@ -271,12 +347,24 @@ function drawBackground(env) {
 }
 
 function triggerGameOver() {
-    isGameOver = true; cars = []; if (score > highScore) highScore = score;
+    isGameOver = true; cars = []; 
+    
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('penguinHighScore', highScore);
+    }
+    
     gameOverMenu.classList.remove('hidden'); finalScoreText.innerText = score; pauseBtn.classList.add('hidden');
+    soundBtn.classList.remove('hidden'); 
+    
+    if (!isSfxMuted) {
+        gameOverAudio.currentTime = 0;
+        gameOverAudio.play();
+    }
 }
 
 // ==========================================
-// [로직 수정] 공격 조건(좌우 판정) 및 돌진
+// [로직] 매: 계산된 높이 + 4번째 점프 필살
 // ==========================================
 function updateHawk() {
     if (isGameOver || isPaused || !isGameStarted) return;
@@ -288,46 +376,55 @@ function updateHawk() {
 
         if (Math.random() < spawnChance) {
             hawkState = 'patrolling'; 
+            
+            // [X 위치]
             hawkX = canvas.width + 50; 
-            hawkY = gy * 0.2; 
             
+            // [Y 위치 계산]
+            const maxJumpHeight = (penguin.jumpPower * penguin.jumpPower) / (2 * penguin.gravity);
+            const playerApexY = gy - penguin.height - maxJumpHeight;
+            hawkY = playerApexY - 100; 
+
             hawkSpeed = (canvas.width + 200) / 360; 
-            
             citySpeed *= 1.2; 
             isShortCarMode = true; 
+            
+            // [추가됨] 스폰 시 타이머 초기화
+            hawkActiveTimer = 0;
         }
         lastHawkCheckScore += 100; 
     } 
     
     else if (hawkState === 'patrolling') {
-        hawkX -= hawkSpeed; // 순찰 이동
+        hawkX -= hawkSpeed; 
+        
+        // [추가됨] 매 활동 타이머 증가
+        hawkActiveTimer++;
 
         // [공격 트리거]
-        // 1. 플레이어가 매보다 높거나 같음 (penguin.y <= hawkY)
-        // 2. ★중요: 매가 플레이어보다 오른쪽(혹은 겹침)에 있어야 함 (hawkX >= penguin.x)
         if (penguin.y <= hawkY && penguin.visible && hawkX >= penguin.x) {
-            hawkState = 'attacking'; // 공격 모드 전환
-            hawkSpeed *= 1.5;        // [속도 50% 증가]
+            hawkState = 'attacking'; 
+            hawkSpeed *= 1.5;    
+            
+            if (!isSfxMuted) {
+                hawkAudio.currentTime = 0;
+                hawkAudio.play();
+            }
         }
 
-        // 왼쪽 끝으로 사라지면 퇴장
         if (hawkX < -150) {
             hawkState = 'leaving';
         }
     } 
     
-    // [돌진 모드] 플레이어 쪽으로 유도되어 날아감
     else if (hawkState === 'attacking') {
-        // 플레이어 방향 벡터 계산
         let dx = penguin.x - hawkX;
         let dy = penguin.y - hawkY;
         let dist = Math.sqrt(dx*dx + dy*dy);
 
-        // 해당 방향으로 가속된 속도로 이동
         hawkX += (dx / dist) * hawkSpeed;
         hawkY += (dy / dist) * hawkSpeed;
 
-        // 플레이어와 충돌 시 납치
         if (dist < 40 && penguin.visible) {
             hawkState = 'carrying';
             penguin.visible = false;
@@ -348,9 +445,6 @@ function updateHawk() {
     }
 }
 
-// ==========================================
-// [그리기]
-// ==========================================
 function drawHawk() {
     if (hawkState === 'none') return;
     
@@ -360,7 +454,6 @@ function drawHawk() {
     const hawkWidth = 60;
     const hawkHeight = 40;
 
-    // 공격 중(attacking)이거나 납치 중(carrying)일 때 회전
     if (hawkState === 'carrying' || hawkState === 'attacking') {
          let angle = Math.atan2(penguin.y - hawkY, penguin.x - hawkX);
          ctx.rotate(angle);
@@ -385,10 +478,15 @@ function updateCity() {
         penguin.dy = -penguin.jumpPower; 
         penguin.onRoad = false; 
         wasInAir = true; 
+        
+        if (!isSfxMuted) {
+            jumpAudio.currentTime = 0;
+            jumpAudio.play();
+        }
 
-        // 점프 시 매 하강 폭 25픽셀
-        if (hawkState === 'patrolling') {
-            hawkY += 25; 
+        // [점프 로직 수정] 매 출몰 후 210프레임이 지났을 때만 반응
+        if (hawkState === 'patrolling' && hawkActiveTimer > 210) {
+            hawkY += 5; 
         }
     }
     
@@ -401,7 +499,7 @@ function updateCity() {
     let fastMilestone = Math.floor(score / 500);
     if (fastMilestone > lastFastMilestone && !fastEventActive) {
         fastEventActive = true; lastFastMilestone = fastMilestone; fastEventTimer = 0;
-        fastCarSpawnFrame = Math.floor(Math.random() * 60) + 120; 
+        fastCarSpawnFrame = Math.floor(Math.random() * 60) + 180; 
     }
 
     if (fastEventActive) {
@@ -451,7 +549,16 @@ function animate() {
         if (!isGameOver) { updateCity(); drawPenguin(); drawHawk(); cars.forEach(c => c.draw(env)); }
         ctx.save(); const scoreText = `점수: ${score}`;
         ctx.font = 'bold 30px Arial'; ctx.textAlign = 'left'; ctx.strokeStyle = 'black'; ctx.lineWidth = 5; 
-        ctx.strokeText(scoreText, 20, 50); ctx.fillStyle = 'white'; ctx.fillText(scoreText, 20, 50); ctx.restore();
+        ctx.strokeText(scoreText, 20, 50); ctx.fillStyle = 'white'; ctx.fillText(scoreText, 20, 50); 
+        
+        // [최고점수 표시]
+        const highScoreText = `최고기록: ${highScore}`;
+        ctx.font = 'bold 20px Arial';
+        ctx.strokeText(highScoreText, 20, 80);
+        ctx.fillStyle = 'white';
+        ctx.fillText(highScoreText, 20, 80);
+        
+        ctx.restore();
     }
     requestAnimationFrame(animate);
 }
