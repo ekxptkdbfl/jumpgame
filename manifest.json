@@ -2,7 +2,7 @@
   "name": "도시 탈출 펭귄",
   "short_name": "펭귄탈출",
   "start_url": "index.html",
-  "display": "fullscreen",
+  "display": "fullscreen sticky",
   "orientation": "landscape",
   "background_color": "#000000",
   "theme_color": "#000000",
@@ -13,4 +13,5 @@
       "type": "image/png"
     }
   ]
+
 }
