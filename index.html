@@ -24,9 +24,23 @@
         </svg>
     </button>
 
+    <button id="language-button">가<br>aあ</button>
+
+    <div id="language-menu" class="hidden menu">
+        <div class="menu-content">
+            <h1 class="menu-title" id="language-menu-title" style="font-size: 30px;">언어 설정</h1>
+            <div class="button-group">
+                <button id="lang-ko" class="lang-option">한국어</button>
+                <button id="lang-en" class="lang-option">English</button>
+                <button id="lang-ja" class="lang-option">日本語</button>
+                <button id="close-language-btn" class="home-style">닫기</button>
+            </div>
+        </div>
+    </div>
+
     <div id="settings-menu" class="hidden menu">
         <div class="menu-content">
-            <h1 class="menu-title" style="font-size: 30px;">소리 설정</h1>
+            <h1 class="menu-title" id="sound-settings-title" style="font-size: 30px;">소리 설정</h1>
             <div class="button-group">
                 <button id="toggle-bgm-btn">배경음악: ON</button>
                 <button id="toggle-sfx-btn">효과음: ON</button>
@@ -42,23 +56,23 @@
     </button>
 
     <div id="main-menu">
-        <p class="landscape-hint">가로 화면 장려</p>
+        <p class="landscape-hint" id="landscape-hint">가로 화면 장려</p>
         <div class="menu-content">
-            <h1 class="game-title">도시 탈출<br><span>펭귄</span></h1>
+            <h1 class="game-title"><span id="game-title-1">도시 탈출</span><br><span id="game-title-2">펭귄</span></h1>
             <button id="start-button">게임 시작</button>
         </div>
     </div>
 
     <div id="pause-menu" class="hidden">
         <div class="menu-content">
-            <h1 class="menu-title">일시정지</h1>
+            <h1 class="menu-title" id="pause-title">일시정지</h1>
             <div class="button-group">
                 <button id="continue-button">이어하기</button>
                 <button id="restart-pause-button">재시작</button>
                 <button id="home-button" class="home-style">
                     <svg viewBox="0 0 24 24" width="24" height="24" style="margin-right:8px; vertical-align:middle;">
                         <path fill="white" d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" />
-                    </svg>메인으로
+                    </svg><span id="home-button-text">메인으로</span>
                 </button>
             </div>
         </div>
@@ -66,8 +80,8 @@
 
     <div id="game-over-menu" class="hidden">
         <div class="menu-content">
-            <h1 class="game-over-title">게임 오버</h1>
-            <p class="final-score">점수: <span id="final-score-val">0</span></p>
+            <h1 class="game-over-title" id="game-over-title">게임 오버</h1>
+            <p class="final-score"><span id="score-label">점수:</span> <span id="final-score-val">0</span></p>
             <div class="button-group">
                 <button id="restart-button">다시 시작</button>
                 <button id="exit-to-main-button" class="home-style">메인으로</button>
@@ -75,7 +89,7 @@
         </div>
     </div>
 
-    <script src="script.js?v=20260114d"></script>
+    <script src="script.js?v=20260114g"></script>
 
     <script>
         if ('serviceWorker' in navigator) {

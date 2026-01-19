@@ -15,6 +15,143 @@ const toggleBgmBtn = document.getElementById('toggle-bgm-btn');
 const toggleSfxBtn = document.getElementById('toggle-sfx-btn');
 const closeSettingsBtn = document.getElementById('close-settings-btn');
 
+// 언어 설정 요소
+const languageBtn = document.getElementById('language-button');
+const languageMenu = document.getElementById('language-menu');
+const closeLanguageBtn = document.getElementById('close-language-btn');
+
+// --- [다국어 지원 시스템] ---
+const translations = {
+    ko: {
+        gameTitle1: '도시 탈출',
+        gameTitle2: '펭귄',
+        startButton: '게임 시작',
+        landscapeHint: '가로 화면 장려',
+        pauseTitle: '일시정지',
+        continueButton: '이어하기',
+        restartButton: '재시작',
+        homeButton: '메인으로',
+        gameOverTitle: '게임 오버',
+        scoreLabel: '점수:',
+        restartButtonAlt: '다시 시작',
+        exitButton: '메인으로',
+        soundSettingsTitle: '소리 설정',
+        bgmToggle: '배경음악:',
+        sfxToggle: '효과음:',
+        closeButton: '닫기',
+        onText: 'ON',
+        offText: 'OFF',
+        languageSettingsTitle: '언어 설정',
+        highScoreLabel: '최고기록:'
+    },
+    en: {
+        gameTitle1: 'Penguin',
+        gameTitle2: 'Run',
+        startButton: 'Start Game',
+        landscapeHint: 'Landscape mode recommended',
+        pauseTitle: 'Paused',
+        continueButton: 'Continue',
+        restartButton: 'Restart',
+        homeButton: 'Main Menu',
+        gameOverTitle: 'Game Over',
+        scoreLabel: 'Score:',
+        restartButtonAlt: 'Play Again',
+        exitButton: 'Main Menu',
+        soundSettingsTitle: 'Sound Settings',
+        bgmToggle: 'BGM:',
+        sfxToggle: 'SFX:',
+        closeButton: 'Close',
+        onText: 'ON',
+        offText: 'OFF',
+        languageSettingsTitle: 'Language',
+        highScoreLabel: 'Best:'
+    },
+    ja: {
+        gameTitle1: 'ペンギン',
+        gameTitle2: 'ラン',
+        startButton: 'スタート',
+        landscapeHint: '横画面推奨',
+        pauseTitle: '一時停止',
+        continueButton: '続ける',
+        restartButton: 'やり直し',
+        homeButton: 'ホーム画面',
+        gameOverTitle: 'ゲームオーバー',
+        scoreLabel: 'スコア:',
+        restartButtonAlt: 'もう一度',
+        exitButton: 'ホーム画面',
+        soundSettingsTitle: 'サウンド',
+        bgmToggle: 'BGM:',
+        sfxToggle: '効果音:',
+        closeButton: '閉じる',
+        onText: 'ON',
+        offText: 'OFF',
+        languageSettingsTitle: '言語',
+        highScoreLabel: 'ベスト:'
+    }
+};
+
+// 현재 언어 (localStorage에서 불러오기, 기본값: 영어)
+let currentLanguage = localStorage.getItem('penguinLanguage') || 'en';
+
+function updateLanguage(lang) {
+    currentLanguage = lang;
+    localStorage.setItem('penguinLanguage', lang);
+    const t = translations[lang];
+
+    // 메인 메뉴
+    document.getElementById('game-title-1').innerText = t.gameTitle1;
+    document.getElementById('game-title-2').innerText = t.gameTitle2;
+    document.getElementById('start-button').innerText = t.startButton;
+    document.getElementById('landscape-hint').innerText = t.landscapeHint;
+
+    // 일시정지 메뉴
+    document.getElementById('pause-title').innerText = t.pauseTitle;
+    document.getElementById('continue-button').innerText = t.continueButton;
+    document.getElementById('restart-pause-button').innerText = t.restartButton;
+    document.getElementById('home-button-text').innerText = t.homeButton;
+
+    // 게임 오버 메뉴
+    document.getElementById('game-over-title').innerText = t.gameOverTitle;
+    document.getElementById('score-label').innerText = t.scoreLabel;
+    document.getElementById('restart-button').innerText = t.restartButtonAlt;
+    document.getElementById('exit-to-main-button').innerText = t.exitButton;
+
+    // 소리 설정 메뉴
+    document.getElementById('sound-settings-title').innerText = t.soundSettingsTitle;
+    toggleBgmBtn.innerText = `${t.bgmToggle} ${isBgmMuted ? t.offText : t.onText}`;
+    toggleSfxBtn.innerText = `${t.sfxToggle} ${isSfxMuted ? t.offText : t.onText}`;
+    document.getElementById('close-settings-btn').innerText = t.closeButton;
+
+    // 언어 설정 메뉴
+    document.getElementById('language-menu-title').innerText = t.languageSettingsTitle;
+    document.getElementById('close-language-btn').innerText = t.closeButton;
+}
+
+// 언어 메뉴 이벤트
+languageBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    languageMenu.classList.remove('hidden');
+});
+
+closeLanguageBtn.addEventListener('click', () => {
+    languageMenu.classList.add('hidden');
+});
+
+document.getElementById('lang-ko').addEventListener('click', () => {
+    updateLanguage('ko');
+    languageMenu.classList.add('hidden');
+});
+
+document.getElementById('lang-en').addEventListener('click', () => {
+    updateLanguage('en');
+    languageMenu.classList.add('hidden');
+});
+
+document.getElementById('lang-ja').addEventListener('click', () => {
+    updateLanguage('ja');
+    languageMenu.classList.add('hidden');
+});
+
 // --- [오디오 시스템] ---
 const bgmAudio = new Audio('bgm.mp3');
 bgmAudio.loop = true;
@@ -71,7 +208,8 @@ toggleBgmBtn.addEventListener('click', () => {
         bgmAudio.play().catch(e => { });
     }
 
-    toggleBgmBtn.innerText = `배경음악: ${isBgmMuted ? 'OFF' : 'ON'}`;
+    const t = translations[currentLanguage];
+    toggleBgmBtn.innerText = `${t.bgmToggle} ${isBgmMuted ? t.offText : t.onText}`;
     toggleBgmBtn.style.backgroundColor = isBgmMuted ? '#e74c3c' : '#f39c12';
 });
 
@@ -80,10 +218,10 @@ toggleSfxBtn.addEventListener('click', () => {
     jumpAudio.muted = isSfxMuted;
     gameOverAudio.muted = isSfxMuted;
     hawkAudio.muted = isSfxMuted;
-    toggleSfxBtn.innerText = `효과음: ${isSfxMuted ? 'OFF' : 'ON'}`;
+    const t = translations[currentLanguage];
+    toggleSfxBtn.innerText = `${t.sfxToggle} ${isSfxMuted ? t.offText : t.onText}`;
     toggleSfxBtn.style.backgroundColor = isSfxMuted ? '#e74c3c' : '#f39c12';
 });
-
 
 // --- [게임 변수] ---
 let score = 0;
@@ -126,16 +264,22 @@ const cloudShapes = [[[0, 0, 120, 40], [30, -20, 80, 40]], [[0, 0, 150, 30], [20
 
 let penguin = {
     x: 0, y: 0, width: 40, height: 40, dy: 0,
-    jumpPower: 9.2,     // 점프력
-    gravity: 0.465,     // 하강 속도 (3% 감소: 0.48 → 0.465)
-    floatGravity: 0.31, // 부유감 (3% 감소: 0.32 → 0.31)
+    jumpPower: 8.36,    // 체공 시간 10% 증가 (9.2 -> 8.36)
+    gravity: 0.384,     // 체공 시간 10% 증가 (0.465 -> 0.384)
+    floatGravity: 0.256, // 부유감 조정 (0.31 -> 0.256)
     onRoad: true, visible: true
 };
 
+// [화면 크기 비례 스케일링 변수]
+let gameScale = 1;
+let logicalWidth = 0;
+let logicalHeight = 0;
+const BASE_HEIGHT = 450; // 기준 높이 (모바일 가로 모드 기준)
+
 function getGroundY() {
-    const displayHeight = window.innerHeight;
-    const limitedHeight = Math.min(displayHeight, 1440);
-    return limitedHeight * 0.7 + (displayHeight > 1440 ? (displayHeight - 1440) : 0);
+    // 논리적 높이 기준으로 바닥 위치 계산
+    const limitedHeight = Math.min(logicalHeight, 1440);
+    return limitedHeight * 0.7 + (logicalHeight > 1440 ? (logicalHeight - 1440) : 0);
 }
 
 function resizeCanvas() {
@@ -150,29 +294,41 @@ function resizeCanvas() {
     canvas.height = displayHeight * dpr;
     canvas.style.width = displayWidth + 'px';
     canvas.style.height = displayHeight + 'px';
-    ctx.scale(dpr, dpr);
+
+    // [스케일 계산]
+    gameScale = displayHeight / BASE_HEIGHT;
+    // 너무 작아지거나 커지지 않도록 최소/최대 제한 (선택사항, 일단 제한 없이 적용)
+
+    logicalWidth = displayWidth / gameScale;
+    logicalHeight = displayHeight / gameScale;
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // 변환 초기화
+    ctx.scale(dpr * gameScale, dpr * gameScale); // DPR * 게임 스케일 적용
 
     // [모바일 화질 개선] 캔버스 렌더링 품질 설정
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
-    // 펭귄 크기 고정 (10% 감소: 45px → 40px)
+    // 펭귄 크기 고정 (40px) - 스케일이 적용되므로 시각적으로는 커짐
     penguin.width = penguin.height = 40;
-    penguin.x = displayWidth * 0.20;
+
+    // 펭귄 초기 위치 (논리적 좌표계 사용)
+    penguin.x = logicalWidth * 0.20;
     const groundY = getGroundY();
     if (penguin.onRoad) penguin.y = groundY - penguin.height;
+
     initBackground();
 }
 window.addEventListener('resize', resizeCanvas);
 
 function initBackground() {
     const groundY = getGroundY();
-    const displayWidth = window.innerWidth;
     backBuildings = []; buildings = []; stars = []; clouds = [];
-    for (let i = 0; i < Math.ceil(displayWidth / 80) + 5; i++) addBackBuilding(i * 80);
-    for (let i = 0; i < Math.ceil(displayWidth / 50) + 5; i++) addForegroundObject(i * 60);
-    for (let i = 0; i < 60; i++) stars.push({ x: Math.random() * displayWidth, y: Math.random() * groundY, size: Math.random() * 2 + 1, phase: Math.random() * Math.PI * 2 });
-    for (let i = 0; i < 8; i++) spawnCloud(Math.random() * displayWidth);
+    // 화면 너비 대신 logicalWidth 사용
+    for (let i = 0; i < Math.ceil(logicalWidth / 80) + 5; i++) addBackBuilding(i * 80);
+    for (let i = 0; i < Math.ceil(logicalWidth / 50) + 5; i++) addForegroundObject(i * 60);
+    for (let i = 0; i < 60; i++) stars.push({ x: Math.random() * logicalWidth, y: Math.random() * groundY, size: Math.random() * 2 + 1, phase: Math.random() * Math.PI * 2 });
+    for (let i = 0; i < 8; i++) spawnCloud(Math.random() * logicalWidth);
 }
 
 function addBackBuilding(startX) {
@@ -204,7 +360,7 @@ class Car {
         // [크기는 고정, 속도만 스케일]
         this.carWidth = isMotorcycle ? 60 : (isFast ? 100 : (Math.random() > 0.5 ? 130 : 80));
         this.height = 40;
-        this.x = window.innerWidth + 100;
+        this.x = logicalWidth + 100;
         this.y = getGroundY() - this.height;
         this.color = isFast ? '#ffffff' : ['#e74c3c', '#f1c40f', '#3498db', '#9b59b6'][Math.floor(Math.random() * 4)];
         this.passed = false;
@@ -250,6 +406,7 @@ function goToMain() {
     isGameStarted = false; isGameOver = false; isPaused = false;
     mainMenu.classList.remove('hidden'); gameOverMenu.classList.add('hidden'); pauseMenu.classList.add('hidden'); pauseBtn.classList.add('hidden');
     soundBtn.classList.remove('hidden');
+    languageBtn.classList.remove('hidden');
 
     if (score > highScore) highScore = score;
 
@@ -264,9 +421,11 @@ function togglePause() {
     if (isPaused) {
         pauseMenu.classList.remove('hidden');
         soundBtn.classList.remove('hidden');
+        pauseBtn.classList.add('hidden');
     } else {
         pauseMenu.classList.add('hidden');
         soundBtn.classList.add('hidden');
+        pauseBtn.classList.remove('hidden');
     }
 }
 
@@ -275,6 +434,7 @@ function startGame() {
     mainMenu.classList.add('hidden'); gameOverMenu.classList.add('hidden'); pauseMenu.classList.add('hidden');
     pauseBtn.classList.remove('hidden');
     soundBtn.classList.add('hidden');
+    languageBtn.classList.add('hidden');
 
     isGameStarted = true; isPaused = false;
 
@@ -317,34 +477,29 @@ function getEnvironmentState() {
 
 function updateEnvironment() {
     if (isPaused) return;
-    const displayWidth = window.innerWidth;
     roadOffset = (roadOffset + (citySpeed * 0.7)) % 80;
-    clouds.forEach(c => { c.x -= c.speed; if (c.x < -250) c.x = displayWidth + 100; });
-    backBuildings.forEach(b => { b.x -= citySpeed * 0.08; if (b.x < -200) b.x = displayWidth + 100; });
-    buildings.forEach(b => { b.x -= citySpeed * 0.2; if (b.x < -200) b.x = displayWidth + 200; });
+    clouds.forEach(c => { c.x -= c.speed; if (c.x < -250) c.x = logicalWidth + 100; });
+    backBuildings.forEach(b => { b.x -= citySpeed * 0.08; if (b.x < -200) b.x = logicalWidth + 100; });
+    buildings.forEach(b => { b.x -= citySpeed * 0.2; if (b.x < -200) b.x = logicalWidth + 200; });
 }
 
 function drawRoadDetails() {
     const groundY = getGroundY();
-    const displayWidth = window.innerWidth;
-    const displayHeight = window.innerHeight;
-    const centerY = groundY + (displayHeight - groundY) * 0.45;
+    const centerY = groundY + (logicalHeight - groundY) * 0.45;
     ctx.save(); ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.lineWidth = 12; ctx.setLineDash([40, 40]);
-    ctx.beginPath(); ctx.moveTo(-roadOffset, centerY); ctx.lineTo(displayWidth + 80, centerY); ctx.stroke(); ctx.restore();
+    ctx.beginPath(); ctx.moveTo(-roadOffset, centerY); ctx.lineTo(logicalWidth + 80, centerY); ctx.stroke(); ctx.restore();
 }
 
 function drawBackground(env) {
     const groundY = getGroundY();
-    const displayWidth = window.innerWidth;
-    const displayHeight = window.innerHeight;
-    ctx.fillStyle = env.bg; ctx.fillRect(0, 0, displayWidth, displayHeight);
+    ctx.fillStyle = env.bg; ctx.fillRect(0, 0, logicalWidth, logicalHeight);
     if (env.lightOpacity > 0.1) stars.forEach(s => {
         ctx.fillStyle = `rgba(255, 255, 255, ${env.lightOpacity * (0.3 + Math.abs(Math.sin(Date.now() / 1000 + s.phase) * 0.6))})`;
         ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2); ctx.fill();
     });
-    ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.arc(displayWidth - 200, env.sunY, 60, 0, Math.PI * 2); ctx.fill();
-    ctx.save(); ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(displayWidth - 200, env.moonY, 65, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = env.bg; ctx.beginPath(); ctx.arc(displayWidth - 160, env.moonY - 20, 65, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.arc(logicalWidth - 200, env.sunY, 60, 0, Math.PI * 2); ctx.fill();
+    ctx.save(); ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(logicalWidth - 200, env.moonY, 65, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = env.bg; ctx.beginPath(); ctx.arc(logicalWidth - 160, env.moonY - 20, 65, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     clouds.forEach(c => {
         ctx.save(); ctx.globalAlpha = 0.5; ctx.fillStyle = 'white'; ctx.beginPath();
         cloudShapes[c.shapeIndex].forEach(rect => ctx.rect(c.x + rect[0], c.y + rect[1], rect[2], rect[3]));
@@ -402,14 +557,14 @@ function updateHawk() {
             hawkState = 'patrolling';
 
             // [X 위치]
-            hawkX = window.innerWidth + 50;
+            hawkX = logicalWidth + 50;
 
             // [Y 위치 계산]
             const maxJumpHeight = (penguin.jumpPower * penguin.jumpPower) / (2 * penguin.gravity);
             const playerApexY = gy - penguin.height - maxJumpHeight;
             hawkY = playerApexY - 102; // 100 → 102 (점프 높이 변경 보정, 매 절대 위치 유지)
 
-            hawkSpeed = (window.innerWidth + 200) / 360;
+            hawkSpeed = (logicalWidth + 200) / 360;
             citySpeed *= 1.2;
             isShortCarMode = true;
 
@@ -426,7 +581,7 @@ function updateHawk() {
         hawkActiveTimer++;
 
         // [공격 트리거] 매가 화면에 보이고, 플레이어 높이가 매 높이 이상일 때만 공격
-        if (penguin.y <= hawkY && penguin.visible && hawkX >= penguin.x && hawkX < window.innerWidth) {
+        if (penguin.y <= hawkY && penguin.visible && hawkX >= penguin.x && hawkX < logicalWidth) {
             hawkState = 'attacking';
             hawkSpeed *= 1.5;
 
@@ -527,7 +682,7 @@ function updateCity() {
         }
 
         // [점프 로직 수정] 매가 화면에 보이고, 플레이어보다 오른쪽에 있을 때만 반응
-        if (hawkState === 'patrolling' && hawkX < window.innerWidth && hawkX > penguin.x) {
+        if (hawkState === 'patrolling' && hawkX < logicalWidth && hawkX > penguin.x) {
             hawkY += 8; // 8픽셀 하강
         }
     }
@@ -585,18 +740,18 @@ function animate() {
     const env = getEnvironmentState(); drawBackground(env);
     const groundY = getGroundY();
     let rc = lerpColor([149, 165, 166], [28, 40, 51], env.lightOpacity);
-    const displayWidth = window.innerWidth;
-    const displayHeight = window.innerHeight;
-    ctx.fillStyle = `rgb(${rc.join(',')})`; ctx.fillRect(0, groundY, displayWidth, displayHeight - groundY);
+    ctx.fillStyle = `rgb(${rc.join(',')})`; ctx.fillRect(0, groundY, logicalWidth, logicalHeight - groundY);
     updateEnvironment(); drawRoadDetails();
     if (isGameStarted) {
         if (!isGameOver) { updateCity(); drawPenguin(); drawHawk(); cars.forEach(c => c.draw(env)); }
-        ctx.save(); const scoreText = `점수: ${score}`;
+        ctx.save();
+        const t = translations[currentLanguage];
+        const scoreText = `${t.scoreLabel} ${score}`;
         ctx.font = 'bold 30px Arial'; ctx.textAlign = 'left'; ctx.strokeStyle = 'black'; ctx.lineWidth = 5;
         ctx.strokeText(scoreText, 20, 50); ctx.fillStyle = 'white'; ctx.fillText(scoreText, 20, 50);
 
         // [최고점수 표시]
-        const highScoreText = `최고기록: ${highScore}`;
+        const highScoreText = `${t.highScoreLabel} ${highScore}`;
         ctx.font = 'bold 20px Arial';
         ctx.strokeText(highScoreText, 20, 80);
         ctx.fillStyle = 'white';
@@ -619,4 +774,4 @@ canvas.addEventListener('mousedown', (e) => { handleInput(true); e.preventDefaul
 canvas.addEventListener('mouseup', (e) => { handleInput(false); e.preventDefault(); });
 canvas.addEventListener('touchstart', (e) => { if (e.target === canvas) { handleInput(true); e.preventDefault(); } }, { passive: false });
 canvas.addEventListener('touchend', () => handleInput(false), { passive: false });
-resizeCanvas(); animate();
+resizeCanvas(); updateLanguage(currentLanguage); animate();
