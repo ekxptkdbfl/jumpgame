@@ -5,7 +5,7 @@ const ctx = canvas.getContext('2d');
 const mainMenu = document.getElementById('main-menu');
 const gameOverMenu = document.getElementById('game-over-menu');
 const pauseMenu = document.getElementById('pause-menu');
-const settingsMenu = document.getElementById('settings-menu'); 
+const settingsMenu = document.getElementById('settings-menu');
 const pauseBtn = document.getElementById('pause-button');
 const soundBtn = document.getElementById('sound-button');
 const finalScoreText = document.getElementById('final-score-val');
@@ -17,8 +17,8 @@ const closeSettingsBtn = document.getElementById('close-settings-btn');
 
 // --- [오디오 시스템] ---
 const bgmAudio = new Audio('bgm.mp3');
-bgmAudio.loop = true; 
-bgmAudio.volume = 0.5; 
+bgmAudio.loop = true;
+bgmAudio.volume = 0.5;
 
 const jumpAudio = new Audio('jump.mp3');
 const gameOverAudio = new Audio('gameover.mp3');
@@ -31,7 +31,7 @@ let isSfxMuted = false;
 // --- [초기화: 메인 화면 소리 재생] ---
 function initAudioContext() {
     if (!isBgmMuted && bgmAudio.paused) {
-        bgmAudio.play().catch(e => {});
+        bgmAudio.play().catch(e => { });
     }
     document.removeEventListener('click', initAudioContext);
     document.removeEventListener('keydown', initAudioContext);
@@ -44,10 +44,10 @@ document.addEventListener('keydown', initAudioContext);
 document.getElementById('start-button').addEventListener('click', startGame);
 document.getElementById('restart-button').addEventListener('click', startGame);
 document.getElementById('restart-pause-button').addEventListener('click', startGame);
-document.getElementById('continue-button').addEventListener('click', () => { 
-    isPaused = false; 
-    pauseMenu.classList.add('hidden'); 
-    soundBtn.classList.add('hidden'); 
+document.getElementById('continue-button').addEventListener('click', () => {
+    isPaused = false;
+    pauseMenu.classList.add('hidden');
+    soundBtn.classList.add('hidden');
 });
 document.getElementById('home-button').addEventListener('click', goToMain);
 document.getElementById('exit-to-main-button').addEventListener('click', goToMain);
@@ -56,19 +56,19 @@ pauseBtn.addEventListener('click', (e) => { e.stopPropagation(); togglePause(); 
 // [소리 설정 관련 로직]
 soundBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    settingsMenu.classList.remove('hidden'); 
+    settingsMenu.classList.remove('hidden');
 });
 
 closeSettingsBtn.addEventListener('click', () => {
-    settingsMenu.classList.add('hidden'); 
+    settingsMenu.classList.add('hidden');
 });
 
 toggleBgmBtn.addEventListener('click', () => {
     isBgmMuted = !isBgmMuted;
     bgmAudio.muted = isBgmMuted;
-    
+
     if (!isBgmMuted && bgmAudio.paused) {
-        bgmAudio.play().catch(e => {});
+        bgmAudio.play().catch(e => { });
     }
 
     toggleBgmBtn.innerText = `배경음악: ${isBgmMuted ? 'OFF' : 'ON'}`;
@@ -86,65 +86,80 @@ toggleSfxBtn.addEventListener('click', () => {
 
 
 // --- [게임 변수] ---
-let score = 0;           
-let obstaclesPassed = 0; 
+let score = 0;
+let obstaclesPassed = 0;
 
 // [최고점수 불러오기]
 let highScore = Number(localStorage.getItem('penguinHighScore')) || 0;
 
-const BASE_CITY_SPEED = 3.86;  
+const BASE_CITY_SPEED = 3.86;
 let citySpeed = BASE_CITY_SPEED;
 let isGameOver = false;
 let isGameStarted = false;
 let isPaused = false;
 let keys = {};
+let jumpReleased = true; // 점프 입력 해제 여부 (연속 점프 방지)
 let roadOffset = 0;
 
-let targetEnv = 0; let currentEnv = 0; 
-let spawnTimer = 0; let nextSpawnTime = 150; let longGapEnforceCount = 0; 
-let fastEventActive = false; let fastEventTimer = 0; const EVENT_DURATION = 360; 
+let targetEnv = 0; let currentEnv = 0;
+let spawnTimer = 0; let nextSpawnTime = 150; let longGapEnforceCount = 0;
+let fastEventActive = false; let fastEventTimer = 0; const EVENT_DURATION = 360;
 let fastCarSpawnFrame = 0; let lastFastMilestone = 0;
 
 // --- [매 습격 시스템 변수] ---
-let hawkState = 'none'; 
-let lastHawkCheckScore = 800; 
-let isShortCarMode = false; 
+let hawkState = 'none';
+let lastHawkCheckScore = 800;
+let isShortCarMode = false;
 let hawkX = 0, hawkY = 0;
 let hawkSpeed = 5;
 // [추가됨] 매 활동 시간 타이머 (반응 지연용)
-let hawkActiveTimer = 0; 
+let hawkActiveTimer = 0;
 
 const hawkImage = new Image();
-hawkImage.src = 'hawk.png'; 
+hawkImage.src = 'hawk.png';
 let isHawkLoaded = false;
-hawkImage.onload = function() { isHawkLoaded = true; };
+hawkImage.onload = function () { isHawkLoaded = true; };
 
-let wasInAir = false; 
+let wasInAir = false;
 let buildings = []; let backBuildings = []; let stars = []; let clouds = []; let cars = [];
-const cloudShapes = [[[0,0,120,40],[30,-20,80,40]],[[0,0,150,30],[20,20,100,25]],[[0,0,80,50],[15,-25,50,40]],[[0,0,60,30],[40,15,50,25]],[[0,0,130,45],[25,-25,90,35]]];
+const cloudShapes = [[[0, 0, 120, 40], [30, -20, 80, 40]], [[0, 0, 150, 30], [20, 20, 100, 25]], [[0, 0, 80, 50], [15, -25, 50, 40]], [[0, 0, 60, 30], [40, 15, 50, 25]], [[0, 0, 130, 45], [25, -25, 90, 35]]];
 
-let penguin = { 
-    x: 0, y: 0, width: 45, height: 45, dy: 0, 
-    jumpPower: 5.3,  
-    gravity: 0.6,    
-    floatGravity: 0.1, 
-    onRoad: true, visible: true 
+let penguin = {
+    x: 0, y: 0, width: 40, height: 40, dy: 0,
+    jumpPower: 9.2,     // 점프력
+    gravity: 0.465,     // 하강 속도 (3% 감소: 0.48 → 0.465)
+    floatGravity: 0.31, // 부유감 (3% 감소: 0.32 → 0.31)
+    onRoad: true, visible: true
 };
 
 function getGroundY() {
-    const limitedHeight = Math.min(canvas.height, 1440);
-    return limitedHeight * 0.7 + (canvas.height > 1440 ? (canvas.height - 1440) : 0);
+    const displayHeight = window.innerHeight;
+    const limitedHeight = Math.min(displayHeight, 1440);
+    return limitedHeight * 0.7 + (displayHeight > 1440 ? (displayHeight - 1440) : 0);
 }
 
 function resizeCanvas() {
     const container = document.body;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
 
+    // [모바일 선명도 개선] devicePixelRatio 적용
+    const dpr = window.devicePixelRatio || 1;
+    const displayWidth = window.innerWidth;
+    const displayHeight = window.innerHeight;
+
+    canvas.width = displayWidth * dpr;
+    canvas.height = displayHeight * dpr;
+    canvas.style.width = displayWidth + 'px';
+    canvas.style.height = displayHeight + 'px';
+    ctx.scale(dpr, dpr);
+
+    // [모바일 화질 개선] 캔버스 렌더링 품질 설정
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // 펭귄 크기 고정 (10% 감소: 45px → 40px)
+    penguin.width = penguin.height = 40;
+    penguin.x = displayWidth * 0.20;
     const groundY = getGroundY();
-    const penguinSize = Math.max(20, Math.min(60, Math.floor(canvas.height * 0.035)));
-    penguin.width = penguin.height = penguinSize;
-    penguin.x = canvas.width * 0.20;
     if (penguin.onRoad) penguin.y = groundY - penguin.height;
     initBackground();
 }
@@ -152,11 +167,12 @@ window.addEventListener('resize', resizeCanvas);
 
 function initBackground() {
     const groundY = getGroundY();
+    const displayWidth = window.innerWidth;
     backBuildings = []; buildings = []; stars = []; clouds = [];
-    for (let i = 0; i < Math.ceil(canvas.width / 80) + 5; i++) addBackBuilding(i * 80);
-    for (let i = 0; i < Math.ceil(canvas.width / 50) + 5; i++) addForegroundObject(i * 60);
-    for (let i = 0; i < 60; i++) stars.push({ x: Math.random() * canvas.width, y: Math.random() * groundY, size: Math.random() * 2 + 1, phase: Math.random() * Math.PI * 2 });
-    for (let i = 0; i < 8; i++) spawnCloud(Math.random() * canvas.width);
+    for (let i = 0; i < Math.ceil(displayWidth / 80) + 5; i++) addBackBuilding(i * 80);
+    for (let i = 0; i < Math.ceil(displayWidth / 50) + 5; i++) addForegroundObject(i * 60);
+    for (let i = 0; i < 60; i++) stars.push({ x: Math.random() * displayWidth, y: Math.random() * groundY, size: Math.random() * 2 + 1, phase: Math.random() * Math.PI * 2 });
+    for (let i = 0; i < 8; i++) spawnCloud(Math.random() * displayWidth);
 }
 
 function addBackBuilding(startX) {
@@ -185,26 +201,27 @@ function spawnCloud(startX) {
 
 class Car {
     constructor(isFast = false, isShort = false, isMotorcycle = false) {
+        // [크기는 고정, 속도만 스케일]
         this.carWidth = isMotorcycle ? 60 : (isFast ? 100 : (Math.random() > 0.5 ? 130 : 80));
-        this.height = 40; 
-        this.x = canvas.width + 100; 
+        this.height = 40;
+        this.x = window.innerWidth + 100;
         this.y = getGroundY() - this.height;
         this.color = isFast ? '#ffffff' : ['#e74c3c', '#f1c40f', '#3498db', '#9b59b6'][Math.floor(Math.random() * 4)];
         this.passed = false;
         this.isFast = isFast;
         this.extraSpeed = isFast ? 8.0 : 0;
-        this.isMotorcycle = isMotorcycle; 
+        this.isMotorcycle = isMotorcycle;
     }
     draw(env) {
         this.y = getGroundY() - this.height;
         if (this.isMotorcycle) {
             ctx.save(); ctx.translate(this.x, this.y);
             ctx.fillStyle = '#333';
-            ctx.beginPath(); ctx.arc(10, 30, 10, 0, Math.PI*2); ctx.fill(); 
-            ctx.beginPath(); ctx.arc(50, 30, 10, 0, Math.PI*2); ctx.fill(); 
+            ctx.beginPath(); ctx.arc(10, 30, 10, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(50, 30, 10, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = '#3498db';
             ctx.beginPath(); ctx.moveTo(10, 30); ctx.lineTo(30, 15); ctx.lineTo(50, 30); ctx.fill();
-            ctx.fillStyle = '#2c3e50'; ctx.fillRect(20, 10, 25, 8); 
+            ctx.fillStyle = '#2c3e50'; ctx.fillRect(20, 10, 25, 8);
             ctx.restore();
         } else {
             if (env.lightOpacity > 0.1 || this.isFast) {
@@ -232,12 +249,12 @@ function requestFullScreen() {
 function goToMain() {
     isGameStarted = false; isGameOver = false; isPaused = false;
     mainMenu.classList.remove('hidden'); gameOverMenu.classList.add('hidden'); pauseMenu.classList.add('hidden'); pauseBtn.classList.add('hidden');
-    soundBtn.classList.remove('hidden'); 
-    
-    if (score > highScore) highScore = score; 
-    
+    soundBtn.classList.remove('hidden');
+
+    if (score > highScore) highScore = score;
+
     if (!isBgmMuted && bgmAudio.paused) {
-        bgmAudio.play().catch(e=>{});
+        bgmAudio.play().catch(e => { });
     }
 }
 
@@ -246,10 +263,10 @@ function togglePause() {
     isPaused = !isPaused;
     if (isPaused) {
         pauseMenu.classList.remove('hidden');
-        soundBtn.classList.remove('hidden'); 
+        soundBtn.classList.remove('hidden');
     } else {
         pauseMenu.classList.add('hidden');
-        soundBtn.classList.add('hidden'); 
+        soundBtn.classList.add('hidden');
     }
 }
 
@@ -257,10 +274,10 @@ function startGame() {
     if (window.innerWidth <= 768) requestFullScreen();
     mainMenu.classList.add('hidden'); gameOverMenu.classList.add('hidden'); pauseMenu.classList.add('hidden');
     pauseBtn.classList.remove('hidden');
-    soundBtn.classList.add('hidden'); 
+    soundBtn.classList.add('hidden');
 
-    isGameStarted = true; isPaused = false; 
-    
+    isGameStarted = true; isPaused = false;
+
     if (!isBgmMuted && bgmAudio.paused) {
         bgmAudio.play().catch(e => console.log("재생 정책 확인"));
     }
@@ -273,14 +290,16 @@ function resetCityGame() {
     spawnTimer = 0; fastEventTimer = 0; fastEventActive = false; lastFastMilestone = 0;
     targetEnv = 0; currentEnv = 0;
     nextSpawnTime = 150; longGapEnforceCount = 0;
-    citySpeed = BASE_CITY_SPEED; 
-    
-    hawkState = 'none'; hawkTimer = 0; isShortCarMode = false; lastHawkCheckScore = 800; 
+    citySpeed = BASE_CITY_SPEED;
+
+    hawkState = 'none'; hawkTimer = 0; isShortCarMode = false; lastHawkCheckScore = 800;
     hawkActiveTimer = 0; // [추가됨] 타이머 초기화
-    hawkSpeed = 6; 
+    hawkSpeed = 6;
 
     penguin.visible = true;
-    isGameOver = false; isPaused = false; wasInAir = false; resizeCanvas();
+    isGameOver = false; isPaused = false; wasInAir = false;
+    keys = {}; jumpReleased = true; // 입력 상태 초기화
+    resizeCanvas();
 }
 
 function lerpColor(c1, c2, f) { return [Math.floor(c1[0] + (c2[0] - c1[0]) * f), Math.floor(c1[1] + (c2[1] - c1[1]) * f), Math.floor(c1[2] + (c2[2] - c1[2]) * f)]; }
@@ -298,29 +317,34 @@ function getEnvironmentState() {
 
 function updateEnvironment() {
     if (isPaused) return;
+    const displayWidth = window.innerWidth;
     roadOffset = (roadOffset + (citySpeed * 0.7)) % 80;
-    clouds.forEach(c => { c.x -= c.speed; if (c.x < -250) c.x = canvas.width + 100; });
-    backBuildings.forEach(b => { b.x -= citySpeed * 0.08; if (b.x < -200) b.x = canvas.width + 100; });
-    buildings.forEach(b => { b.x -= citySpeed * 0.2; if (b.x < -200) b.x = canvas.width + 200; });
+    clouds.forEach(c => { c.x -= c.speed; if (c.x < -250) c.x = displayWidth + 100; });
+    backBuildings.forEach(b => { b.x -= citySpeed * 0.08; if (b.x < -200) b.x = displayWidth + 100; });
+    buildings.forEach(b => { b.x -= citySpeed * 0.2; if (b.x < -200) b.x = displayWidth + 200; });
 }
 
 function drawRoadDetails() {
     const groundY = getGroundY();
-    const centerY = groundY + (canvas.height - groundY) * 0.45;
-    ctx.save(); ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.lineWidth = 12; ctx.setLineDash([40, 40]); 
-    ctx.beginPath(); ctx.moveTo(-roadOffset, centerY); ctx.lineTo(canvas.width + 80, centerY); ctx.stroke(); ctx.restore();
+    const displayWidth = window.innerWidth;
+    const displayHeight = window.innerHeight;
+    const centerY = groundY + (displayHeight - groundY) * 0.45;
+    ctx.save(); ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.lineWidth = 12; ctx.setLineDash([40, 40]);
+    ctx.beginPath(); ctx.moveTo(-roadOffset, centerY); ctx.lineTo(displayWidth + 80, centerY); ctx.stroke(); ctx.restore();
 }
 
 function drawBackground(env) {
     const groundY = getGroundY();
-    ctx.fillStyle = env.bg; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const displayWidth = window.innerWidth;
+    const displayHeight = window.innerHeight;
+    ctx.fillStyle = env.bg; ctx.fillRect(0, 0, displayWidth, displayHeight);
     if (env.lightOpacity > 0.1) stars.forEach(s => {
-        ctx.fillStyle = `rgba(255, 255, 255, ${env.lightOpacity * (0.3 + Math.abs(Math.sin(Date.now()/1000 + s.phase)*0.6))})`;
+        ctx.fillStyle = `rgba(255, 255, 255, ${env.lightOpacity * (0.3 + Math.abs(Math.sin(Date.now() / 1000 + s.phase) * 0.6))})`;
         ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2); ctx.fill();
     });
-    ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.arc(canvas.width - 200, env.sunY, 60, 0, Math.PI * 2); ctx.fill();
-    ctx.save(); ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(canvas.width - 200, env.moonY, 65, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = env.bg; ctx.beginPath(); ctx.arc(canvas.width - 160, env.moonY - 20, 65, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.arc(displayWidth - 200, env.sunY, 60, 0, Math.PI * 2); ctx.fill();
+    ctx.save(); ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(displayWidth - 200, env.moonY, 65, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = env.bg; ctx.beginPath(); ctx.arc(displayWidth - 160, env.moonY - 20, 65, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     clouds.forEach(c => {
         ctx.save(); ctx.globalAlpha = 0.5; ctx.fillStyle = 'white'; ctx.beginPath();
         cloudShapes[c.shapeIndex].forEach(rect => ctx.rect(c.x + rect[0], c.y + rect[1], rect[2], rect[3]));
@@ -341,22 +365,22 @@ function drawBackground(env) {
             ctx.fillStyle = `rgb(${lerpColor(DAY_TRUNK, NIGHT_TRUNK, env.lightOpacity).join(',')})`; ctx.fillRect(b.x, groundY - b.height, b.width, b.height);
             ctx.fillStyle = `rgb(${lerpColor(DAY_LEAF, NIGHT_LEAF, env.lightOpacity).join(',')})`; ctx.fillRect(b.x - 20, groundY - b.height - 30, b.width + 40, 40);
         } else if (b.type === 'crosswalk') {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'; for(let i=0; i<b.stripes; i++) ctx.fillRect(b.x + i * 25, groundY + 5, 12, 30);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'; for (let i = 0; i < b.stripes; i++) ctx.fillRect(b.x + i * 25, groundY + 5, 12, 30);
         }
     });
 }
 
 function triggerGameOver() {
-    isGameOver = true; cars = []; 
-    
+    isGameOver = true; cars = [];
+
     if (score > highScore) {
         highScore = score;
         localStorage.setItem('penguinHighScore', highScore);
     }
-    
+
     gameOverMenu.classList.remove('hidden'); finalScoreText.innerText = score; pauseBtn.classList.add('hidden');
-    soundBtn.classList.remove('hidden'); 
-    
+    soundBtn.classList.remove('hidden');
+
     if (!isSfxMuted) {
         gameOverAudio.currentTime = 0;
         gameOverAudio.play();
@@ -371,41 +395,41 @@ function updateHawk() {
     const gy = getGroundY();
 
     if (hawkState === 'none' && score >= lastHawkCheckScore) {
-        let isGuaranteed = (lastHawkCheckScore === 800); 
+        let isGuaranteed = (lastHawkCheckScore === 800);
         let spawnChance = isGuaranteed ? 1.0 : 0.4;
 
         if (Math.random() < spawnChance) {
-            hawkState = 'patrolling'; 
-            
+            hawkState = 'patrolling';
+
             // [X 위치]
-            hawkX = canvas.width + 50; 
-            
+            hawkX = window.innerWidth + 50;
+
             // [Y 위치 계산]
             const maxJumpHeight = (penguin.jumpPower * penguin.jumpPower) / (2 * penguin.gravity);
             const playerApexY = gy - penguin.height - maxJumpHeight;
-            hawkY = playerApexY - 100; 
+            hawkY = playerApexY - 102; // 100 → 102 (점프 높이 변경 보정, 매 절대 위치 유지)
 
-            hawkSpeed = (canvas.width + 200) / 360; 
-            citySpeed *= 1.2; 
-            isShortCarMode = true; 
-            
+            hawkSpeed = (window.innerWidth + 200) / 360;
+            citySpeed *= 1.2;
+            isShortCarMode = true;
+
             // [추가됨] 스폰 시 타이머 초기화
             hawkActiveTimer = 0;
         }
-        lastHawkCheckScore += 100; 
-    } 
-    
+        lastHawkCheckScore += 100;
+    }
+
     else if (hawkState === 'patrolling') {
-        hawkX -= hawkSpeed; 
-        
+        hawkX -= hawkSpeed;
+
         // [추가됨] 매 활동 타이머 증가
         hawkActiveTimer++;
 
-        // [공격 트리거]
-        if (penguin.y <= hawkY && penguin.visible && hawkX >= penguin.x) {
-            hawkState = 'attacking'; 
-            hawkSpeed *= 1.5;    
-            
+        // [공격 트리거] 매가 화면에 보이고, 플레이어 높이가 매 높이 이상일 때만 공격
+        if (penguin.y <= hawkY && penguin.visible && hawkX >= penguin.x && hawkX < window.innerWidth) {
+            hawkState = 'attacking';
+            hawkSpeed *= 1.5;
+
             if (!isSfxMuted) {
                 hawkAudio.currentTime = 0;
                 hawkAudio.play();
@@ -415,12 +439,12 @@ function updateHawk() {
         if (hawkX < -150) {
             hawkState = 'leaving';
         }
-    } 
-    
+    }
+
     else if (hawkState === 'attacking') {
         let dx = penguin.x - hawkX;
         let dy = penguin.y - hawkY;
-        let dist = Math.sqrt(dx*dx + dy*dy);
+        let dist = Math.sqrt(dx * dx + dy * dy);
 
         hawkX += (dx / dist) * hawkSpeed;
         hawkY += (dy / dist) * hawkSpeed;
@@ -432,7 +456,7 @@ function updateHawk() {
     }
 
     else if (hawkState === 'carrying') {
-        hawkX -= hawkSpeed; 
+        hawkX -= hawkSpeed;
         if (hawkX < -200) {
             triggerGameOver();
         }
@@ -447,24 +471,41 @@ function updateHawk() {
 
 function drawHawk() {
     if (hawkState === 'none') return;
-    
-    ctx.save(); 
+
+    const displayWidth = window.innerWidth;
+
+    // [레이저 경고선] 매가 순찰 중일 때 앞쪽에 깜빡이는 레이저 표시
+    if (hawkState === 'patrolling') {
+        ctx.save();
+        // 깜빡임 효과 (sin 함수로 투명도 변화)
+        const blink = 0.2 + Math.abs(Math.sin(Date.now() / 100)) * 0.3;
+        ctx.strokeStyle = `rgba(255, 30, 30, ${blink})`;
+        ctx.lineWidth = 8;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(0, hawkY);
+        ctx.lineTo(hawkX - 30, hawkY); // 매 앞쪽까지만
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    ctx.save();
     ctx.translate(hawkX, hawkY);
-    
+
     const hawkWidth = 60;
     const hawkHeight = 40;
 
     if (hawkState === 'carrying' || hawkState === 'attacking') {
-         let angle = Math.atan2(penguin.y - hawkY, penguin.x - hawkX);
-         ctx.rotate(angle);
-         if (Math.abs(angle) > Math.PI / 2) ctx.scale(1, -1);
-    } 
+        let angle = Math.atan2(penguin.y - hawkY, penguin.x - hawkX);
+        ctx.rotate(angle);
+        if (Math.abs(angle) > Math.PI / 2) ctx.scale(1, -1);
+    }
 
     if (isHawkLoaded) {
-        ctx.drawImage(hawkImage, -hawkWidth/2, -hawkHeight/2, hawkWidth, hawkHeight);
+        ctx.drawImage(hawkImage, -hawkWidth / 2, -hawkHeight / 2, hawkWidth, hawkHeight);
     } else {
         ctx.fillStyle = 'red';
-        ctx.fillRect(-hawkWidth/2, -hawkHeight/2, hawkWidth, hawkHeight);
+        ctx.fillRect(-hawkWidth / 2, -hawkHeight / 2, hawkWidth, hawkHeight);
     }
 
     ctx.restore();
@@ -474,38 +515,39 @@ function updateCity() {
     if (isGameOver || !isGameStarted || isPaused) return;
     const gy = getGroundY();
 
-    if (keys['Space'] && penguin.onRoad) { 
-        penguin.dy = -penguin.jumpPower; 
-        penguin.onRoad = false; 
-        wasInAir = true; 
-        
+    if (keys['Space'] && penguin.onRoad && jumpReleased) {
+        penguin.dy = -penguin.jumpPower;
+        penguin.onRoad = false;
+        wasInAir = true;
+        jumpReleased = false; // 점프 후 해제 필요
+
         if (!isSfxMuted) {
             jumpAudio.currentTime = 0;
             jumpAudio.play();
         }
 
-        // [점프 로직 수정] 매 출몰 후 210프레임이 지났을 때만 반응
-        if (hawkState === 'patrolling' && hawkActiveTimer > 210) {
-            hawkY += 5; 
+        // [점프 로직 수정] 매가 화면에 보이고, 플레이어보다 오른쪽에 있을 때만 반응
+        if (hawkState === 'patrolling' && hawkX < window.innerWidth && hawkX > penguin.x) {
+            hawkY += 8; // 8픽셀 하강
         }
     }
-    
+
     penguin.dy += (keys['Space'] ? penguin.floatGravity : penguin.gravity);
     penguin.y += penguin.dy;
     if (penguin.y >= gy - penguin.height) { penguin.y = gy - penguin.height; penguin.dy = 0; penguin.onRoad = true; if (wasInAir) { score += 5; wasInAir = false; } }
-    
+
     updateHawk();
 
     let fastMilestone = Math.floor(score / 500);
     if (fastMilestone > lastFastMilestone && !fastEventActive) {
         fastEventActive = true; lastFastMilestone = fastMilestone; fastEventTimer = 0;
-        fastCarSpawnFrame = Math.floor(Math.random() * 60) + 180; 
+        fastCarSpawnFrame = Math.floor(Math.random() * 60) + 180;
     }
 
     if (fastEventActive) {
         fastEventTimer++;
         if (fastEventTimer === fastCarSpawnFrame) {
-            cars.push(new Car(true, false, false)); 
+            cars.push(new Car(true, false, false));
         }
         if (fastEventTimer >= EVENT_DURATION) fastEventActive = false;
     } else {
@@ -521,9 +563,9 @@ function updateCity() {
 
     cars.forEach((car, i) => {
         car.x -= (citySpeed + car.extraSpeed);
-        if (!car.passed && car.x < penguin.x) { 
-            car.passed = true; score += 5; obstaclesPassed++; 
-            if(obstaclesPassed % 20 === 0 && score < 800) citySpeed *= 1.12; 
+        if (!car.passed && car.x < penguin.x) {
+            car.passed = true; score += 5; obstaclesPassed++;
+            if (obstaclesPassed % 20 === 0 && score < 800) citySpeed *= 1.12;
         }
         if (car.x < -200) cars.splice(i, 1);
         if (penguin.visible && penguin.x < car.x + car.carWidth - 10 && penguin.x + penguin.width > car.x + 10 && penguin.y + penguin.height > gy - 35) triggerGameOver();
@@ -532,7 +574,7 @@ function updateCity() {
 
 function drawPenguin() {
     if (!penguin.visible) return;
-    const p = penguin, s = p.width / 8; 
+    const p = penguin, s = p.width / 8;
     ctx.fillStyle = '#2c3e50'; ctx.fillRect(p.x, p.y, p.width, p.height);
     ctx.fillStyle = '#ecf0f1'; ctx.fillRect(p.x + s, p.y + s * 3, p.width - s * 2, p.height - s * 3.5);
     ctx.fillStyle = '#f39c12'; ctx.fillRect(p.x + p.width - s, p.y + s * 2.5, s * 1.5, s);
@@ -543,31 +585,38 @@ function animate() {
     const env = getEnvironmentState(); drawBackground(env);
     const groundY = getGroundY();
     let rc = lerpColor([149, 165, 166], [28, 40, 51], env.lightOpacity);
-    ctx.fillStyle = `rgb(${rc.join(',')})`; ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+    const displayWidth = window.innerWidth;
+    const displayHeight = window.innerHeight;
+    ctx.fillStyle = `rgb(${rc.join(',')})`; ctx.fillRect(0, groundY, displayWidth, displayHeight - groundY);
     updateEnvironment(); drawRoadDetails();
     if (isGameStarted) {
         if (!isGameOver) { updateCity(); drawPenguin(); drawHawk(); cars.forEach(c => c.draw(env)); }
         ctx.save(); const scoreText = `점수: ${score}`;
-        ctx.font = 'bold 30px Arial'; ctx.textAlign = 'left'; ctx.strokeStyle = 'black'; ctx.lineWidth = 5; 
-        ctx.strokeText(scoreText, 20, 50); ctx.fillStyle = 'white'; ctx.fillText(scoreText, 20, 50); 
-        
+        ctx.font = 'bold 30px Arial'; ctx.textAlign = 'left'; ctx.strokeStyle = 'black'; ctx.lineWidth = 5;
+        ctx.strokeText(scoreText, 20, 50); ctx.fillStyle = 'white'; ctx.fillText(scoreText, 20, 50);
+
         // [최고점수 표시]
         const highScoreText = `최고기록: ${highScore}`;
         ctx.font = 'bold 20px Arial';
         ctx.strokeText(highScoreText, 20, 80);
         ctx.fillStyle = 'white';
         ctx.fillText(highScoreText, 20, 80);
-        
+
         ctx.restore();
     }
     requestAnimationFrame(animate);
 }
 
-function handleInput(down) { if (isGameStarted && !isGameOver && !isPaused) keys['Space'] = down; }
+function handleInput(down) {
+    if (isGameStarted && !isGameOver && !isPaused) {
+        keys['Space'] = down;
+        if (!down) jumpReleased = true; // 키를 떼면 다시 점프 가능
+    }
+}
 window.addEventListener('keydown', (e) => { if (e.code === 'Space') { handleInput(true); e.preventDefault(); } if (e.code === 'Escape') togglePause(); });
 window.addEventListener('keyup', (e) => { if (e.code === 'Space') handleInput(false); });
-window.addEventListener('mousedown', (e) => { if(e.target === canvas) handleInput(true); });
-window.addEventListener('mouseup', () => handleInput(false));
-canvas.addEventListener('touchstart', (e) => { if(e.target === canvas) { handleInput(true); e.preventDefault(); } }, { passive: false });
-window.addEventListener('touchend', () => handleInput(false));
+canvas.addEventListener('mousedown', (e) => { handleInput(true); e.preventDefault(); });
+canvas.addEventListener('mouseup', (e) => { handleInput(false); e.preventDefault(); });
+canvas.addEventListener('touchstart', (e) => { if (e.target === canvas) { handleInput(true); e.preventDefault(); } }, { passive: false });
+canvas.addEventListener('touchend', () => handleInput(false), { passive: false });
 resizeCanvas(); animate();
