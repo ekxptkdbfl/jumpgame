@@ -176,6 +176,19 @@ function initAudioContext() {
 document.addEventListener('click', initAudioContext);
 document.addEventListener('keydown', initAudioContext);
 
+// --- [화면 가시성 변경 시 배경음악 제어] ---
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        bgmAudio.pause();
+    } else {
+        if (!isBgmMuted && isGameStarted && !isGameOver) {
+            bgmAudio.play().catch(e => { });
+        } else if (!isBgmMuted && !isGameStarted) {
+            bgmAudio.play().catch(e => { });
+        }
+    }
+});
+
 
 // --- [UI 이벤트 리스너] ---
 document.getElementById('start-button').addEventListener('click', startGame);
@@ -230,7 +243,7 @@ let obstaclesPassed = 0;
 // [최고점수 불러오기]
 let highScore = Number(localStorage.getItem('penguinHighScore')) || 0;
 
-const BASE_CITY_SPEED = 3.86;
+const BASE_CITY_SPEED = 4.632; // 20% 증가 (3.86 → 4.632)
 let citySpeed = BASE_CITY_SPEED;
 let isGameOver = false;
 let isGameStarted = false;
