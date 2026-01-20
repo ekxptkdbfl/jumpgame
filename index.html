@@ -3,19 +3,33 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>도시 탈출 펭귄</title>
 
     <link rel="manifest" href="manifest.json?v=20260103">
 
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-    <link rel="stylesheet" href="style.css?v=20260103">
+    <link rel="stylesheet" href="style.css?v=20260120">
 </head>
 
 <body>
     <canvas id="gameCanvas"></canvas>
+
+    <!-- 세로 모드 경고 -->
+    <div id="portrait-warning">
+        <div class="portrait-content">
+            <svg viewBox="0 0 24 24" width="80" height="80">
+                <path fill="white"
+                    d="M7.5,21.5C4.5,21.5 2,19 2,16V8C2,5 4.5,2.5 7.5,2.5H16.5C19.5,2.5 22,5 22,8V16C22,19 19.5,21.5 16.5,21.5H7.5M8,12L11,9V11H16V13H11V15L8,12Z" />
+            </svg>
+            <p id="rotate-text">화면을 가로로 돌려주세요</p>
+            <p class="rotate-hint">Rotate your device</p>
+        </div>
+    </div>
 
     <button id="sound-button">
         <svg viewBox="0 0 24 24" width="30" height="30">
@@ -89,7 +103,7 @@
         </div>
     </div>
 
-    <script src="script.js?v=20260114g"></script>
+    <script src="script.js?v=20260120b"></script>
 
     <script>
         if ('serviceWorker' in navigator) {

@@ -42,7 +42,8 @@ const translations = {
         onText: 'ON',
         offText: 'OFF',
         languageSettingsTitle: '언어 설정',
-        highScoreLabel: '최고기록:'
+        highScoreLabel: '최고기록:',
+        rotateDevice: '화면을 가로로 돌려주세요'
     },
     en: {
         gameTitle1: 'Penguin',
@@ -64,7 +65,8 @@ const translations = {
         onText: 'ON',
         offText: 'OFF',
         languageSettingsTitle: 'Language',
-        highScoreLabel: 'Best:'
+        highScoreLabel: 'Best:',
+        rotateDevice: 'Please rotate your device'
     },
     ja: {
         gameTitle1: 'ペンギン',
@@ -86,7 +88,8 @@ const translations = {
         onText: 'ON',
         offText: 'OFF',
         languageSettingsTitle: '言語',
-        highScoreLabel: 'ベスト:'
+        highScoreLabel: 'ベスト:',
+        rotateDevice: '画面を横にしてください'
     }
 };
 
@@ -125,6 +128,10 @@ function updateLanguage(lang) {
     // 언어 설정 메뉴
     document.getElementById('language-menu-title').innerText = t.languageSettingsTitle;
     document.getElementById('close-language-btn').innerText = t.closeButton;
+
+    // 세로 모드 경고
+    const rotateText = document.getElementById('rotate-text');
+    if (rotateText) rotateText.innerText = t.rotateDevice;
 }
 
 // 언어 메뉴 이벤트
@@ -177,17 +184,30 @@ document.addEventListener('click', initAudioContext);
 document.addEventListener('keydown', initAudioContext);
 
 // --- [화면 가시성 변경 시 배경음악 제어] ---
+function pauseBgmOnHide() {
+    bgmAudio.pause();
+}
+
+function resumeBgmOnShow() {
+    if (!isBgmMuted && !document.hidden) {
+        bgmAudio.play().catch(e => { });
+    }
+}
+
+// 브라우저 탭 전환, 최소화
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-        bgmAudio.pause();
+        pauseBgmOnHide();
     } else {
-        if (!isBgmMuted && isGameStarted && !isGameOver) {
-            bgmAudio.play().catch(e => { });
-        } else if (!isBgmMuted && !isGameStarted) {
-            bgmAudio.play().catch(e => { });
-        }
+        resumeBgmOnShow();
     }
 });
+
+// iOS Safari 및 앱 백그라운드 전환
+window.addEventListener('pagehide', pauseBgmOnHide);
+window.addEventListener('blur', pauseBgmOnHide);
+window.addEventListener('focus', resumeBgmOnShow);
+window.addEventListener('pageshow', resumeBgmOnShow);
 
 
 // --- [UI 이벤트 리스너] ---
@@ -198,6 +218,7 @@ document.getElementById('continue-button').addEventListener('click', () => {
     isPaused = false;
     pauseMenu.classList.add('hidden');
     soundBtn.classList.add('hidden');
+    pauseBtn.classList.remove('hidden');
 });
 document.getElementById('home-button').addEventListener('click', goToMain);
 document.getElementById('exit-to-main-button').addEventListener('click', goToMain);
@@ -243,7 +264,7 @@ let obstaclesPassed = 0;
 // [최고점수 불러오기]
 let highScore = Number(localStorage.getItem('penguinHighScore')) || 0;
 
-const BASE_CITY_SPEED = 4.632; // 20% 증가 (3.86 → 4.632)
+const BASE_CITY_SPEED = 10; // 기본 속도 10으로 증가
 let citySpeed = BASE_CITY_SPEED;
 let isGameOver = false;
 let isGameStarted = false;
@@ -251,6 +272,12 @@ let isPaused = false;
 let keys = {};
 let jumpReleased = true; // 점프 입력 해제 여부 (연속 점프 방지)
 let roadOffset = 0;
+
+// --- [시간 기반 이동을 위한 변수] ---
+const TARGET_FPS = 60;
+const TARGET_FRAME_TIME = 1000 / TARGET_FPS; // 16.67ms
+let lastTime = 0;
+let deltaTime = 1; // 1 = 정상 속도 (60fps 기준)
 
 let targetEnv = 0; let currentEnv = 0;
 let spawnTimer = 0; let nextSpawnTime = 150; let longGapEnforceCount = 0;
@@ -277,9 +304,9 @@ const cloudShapes = [[[0, 0, 120, 40], [30, -20, 80, 40]], [[0, 0, 150, 30], [20
 
 let penguin = {
     x: 0, y: 0, width: 40, height: 40, dy: 0,
-    jumpPower: 8.36,    // 체공 시간 10% 증가 (9.2 -> 8.36)
-    gravity: 0.384,     // 체공 시간 10% 증가 (0.465 -> 0.384)
-    floatGravity: 0.256, // 부유감 조정 (0.31 -> 0.256)
+    jumpPower: 6.5,      // 점프 속도 느리게
+    gravity: 0.18,       // 중력 감소로 체공 시간 증가 (거리 20% 증가)
+    floatGravity: 0.12,  // 부유감 증가
     onRoad: true, visible: true
 };
 
@@ -378,7 +405,7 @@ class Car {
         this.color = isFast ? '#ffffff' : ['#e74c3c', '#f1c40f', '#3498db', '#9b59b6'][Math.floor(Math.random() * 4)];
         this.passed = false;
         this.isFast = isFast;
-        this.extraSpeed = isFast ? 8.0 : 0;
+        this.extraSpeed = isFast ? 24.0 : 0;
         this.isMotorcycle = isMotorcycle;
     }
     draw(env) {
@@ -490,10 +517,12 @@ function getEnvironmentState() {
 
 function updateEnvironment() {
     if (isPaused) return;
-    roadOffset = (roadOffset + (citySpeed * 0.7)) % 80;
-    clouds.forEach(c => { c.x -= c.speed; if (c.x < -250) c.x = logicalWidth + 100; });
-    backBuildings.forEach(b => { b.x -= citySpeed * 0.08; if (b.x < -200) b.x = logicalWidth + 100; });
-    buildings.forEach(b => { b.x -= citySpeed * 0.2; if (b.x < -200) b.x = logicalWidth + 200; });
+    // 게임 시작 전에는 느린 속도로 배경 움직임
+    const speedMultiplier = isGameStarted ? 1 : 0.3;
+    roadOffset = (roadOffset + (citySpeed * 0.7 * deltaTime * speedMultiplier)) % 80;
+    clouds.forEach(c => { c.x -= c.speed * deltaTime * speedMultiplier; if (c.x < -250) c.x = logicalWidth + 100; });
+    backBuildings.forEach(b => { b.x -= citySpeed * 0.08 * deltaTime * speedMultiplier; if (b.x < -200) b.x = logicalWidth + 100; });
+    buildings.forEach(b => { b.x -= citySpeed * 0.2 * deltaTime * speedMultiplier; if (b.x < -200) b.x = logicalWidth + 200; });
 }
 
 function drawRoadDetails() {
@@ -588,10 +617,10 @@ function updateHawk() {
     }
 
     else if (hawkState === 'patrolling') {
-        hawkX -= hawkSpeed;
+        hawkX -= hawkSpeed * deltaTime;
 
         // [추가됨] 매 활동 타이머 증가
-        hawkActiveTimer++;
+        hawkActiveTimer += deltaTime;
 
         // [공격 트리거] 매가 화면에 보이고, 플레이어 높이가 매 높이 이상일 때만 공격
         if (penguin.y <= hawkY && penguin.visible && hawkX >= penguin.x && hawkX < logicalWidth) {
@@ -614,8 +643,8 @@ function updateHawk() {
         let dy = penguin.y - hawkY;
         let dist = Math.sqrt(dx * dx + dy * dy);
 
-        hawkX += (dx / dist) * hawkSpeed;
-        hawkY += (dy / dist) * hawkSpeed;
+        hawkX += (dx / dist) * hawkSpeed * deltaTime;
+        hawkY += (dy / dist) * hawkSpeed * deltaTime;
 
         if (dist < 40 && penguin.visible) {
             hawkState = 'carrying';
@@ -624,7 +653,7 @@ function updateHawk() {
     }
 
     else if (hawkState === 'carrying') {
-        hawkX -= hawkSpeed;
+        hawkX -= hawkSpeed * deltaTime;
         if (hawkX < -200) {
             triggerGameOver();
         }
@@ -696,7 +725,7 @@ function updateCity() {
 
         // [점프 로직 수정] 매가 화면에 보이고, 플레이어보다 오른쪽에 있을 때만 반응
         if (hawkState === 'patrolling' && hawkX < logicalWidth && hawkX > penguin.x) {
-            hawkY += 8; // 8픽셀 하강
+            hawkY += 8.8; // 8.8픽셀 하강 (1.1배)
         }
     }
 
@@ -713,13 +742,14 @@ function updateCity() {
     }
 
     if (fastEventActive) {
-        fastEventTimer++;
-        if (fastEventTimer === fastCarSpawnFrame) {
+        fastEventTimer += deltaTime;
+        if (fastEventTimer >= fastCarSpawnFrame) {
             cars.push(new Car(true, false, false));
+            fastEventTimer = EVENT_DURATION + 1; // 한 번만 스폰
         }
         if (fastEventTimer >= EVENT_DURATION) fastEventActive = false;
     } else {
-        spawnTimer++;
+        spawnTimer += deltaTime;
         if (spawnTimer >= nextSpawnTime) {
             cars.push(new Car(false, isShortCarMode, isShortCarMode));
             spawnTimer = 0;
@@ -730,10 +760,15 @@ function updateCity() {
     }
 
     cars.forEach((car, i) => {
-        car.x -= (citySpeed + car.extraSpeed);
+        car.x -= (citySpeed + car.extraSpeed) * deltaTime;
         if (!car.passed && car.x < penguin.x) {
             car.passed = true; score += 5; obstaclesPassed++;
-            if (obstaclesPassed % 20 === 0 && score < 800) citySpeed *= 1.12;
+            // 100점마다 단계별 속도 증가 (800점까지)
+            const speedMultipliers = [1.56, 1.48, 1.40, 1.32, 1.24, 1.16, 1.08]; // 100~700점
+            const milestone = obstaclesPassed / 20; // 20 obstacles = 100 points
+            if (obstaclesPassed % 20 === 0 && milestone <= 7) {
+                citySpeed *= speedMultipliers[milestone - 1];
+            }
         }
         if (car.x < -200) cars.splice(i, 1);
         if (penguin.visible && penguin.x < car.x + car.carWidth - 10 && penguin.x + penguin.width > car.x + 10 && penguin.y + penguin.height > gy - 35) triggerGameOver();
@@ -749,7 +784,17 @@ function drawPenguin() {
     ctx.fillStyle = 'white'; ctx.fillRect(p.x + p.width - s * 3, p.y + s * 1.5, s, s);
 }
 
-function animate() {
+function animate(currentTime) {
+    // deltaTime 계산 (60fps 기준으로 정규화)
+    if (lastTime === 0) {
+        lastTime = currentTime;
+        deltaTime = 1; // 첫 프레임은 정상 속도로
+    } else {
+        const frameTime = currentTime - lastTime;
+        lastTime = currentTime;
+        deltaTime = Math.min(frameTime / TARGET_FRAME_TIME, 2); // 최대 2배로 제한
+    }
+
     const env = getEnvironmentState(); drawBackground(env);
     const groundY = getGroundY();
     let rc = lerpColor([149, 165, 166], [28, 40, 51], env.lightOpacity);
@@ -787,4 +832,55 @@ canvas.addEventListener('mousedown', (e) => { handleInput(true); e.preventDefaul
 canvas.addEventListener('mouseup', (e) => { handleInput(false); e.preventDefault(); });
 canvas.addEventListener('touchstart', (e) => { if (e.target === canvas) { handleInput(true); e.preventDefault(); } }, { passive: false });
 canvas.addEventListener('touchend', () => handleInput(false), { passive: false });
-resizeCanvas(); updateLanguage(currentLanguage); animate();
+
+// --- [Android 뒤로가기 버튼 핸들러] ---
+// 초기 히스토리 상태 추가
+history.pushState({ game: true }, '');
+
+window.addEventListener('popstate', (e) => {
+    // 설정 메뉴가 열려있으면 닫기
+    if (!settingsMenu.classList.contains('hidden')) {
+        settingsMenu.classList.add('hidden');
+        history.pushState({ game: true }, '');
+        return;
+    }
+
+    // 언어 메뉴가 열려있으면 닫기
+    if (!languageMenu.classList.contains('hidden')) {
+        languageMenu.classList.add('hidden');
+        history.pushState({ game: true }, '');
+        return;
+    }
+
+    // 게임 중이고 일시정지 상태가 아니면 일시정지
+    if (isGameStarted && !isGameOver && !isPaused) {
+        togglePause();
+        history.pushState({ game: true }, '');
+        return;
+    }
+
+    // 일시정지 메뉴가 열려있으면 게임 계속
+    if (!pauseMenu.classList.contains('hidden')) {
+        isPaused = false;
+        pauseMenu.classList.add('hidden');
+        soundBtn.classList.add('hidden');
+        pauseBtn.classList.remove('hidden');
+        history.pushState({ game: true }, '');
+        return;
+    }
+
+    // 게임 오버 메뉴가 열려있으면 메인으로
+    if (!gameOverMenu.classList.contains('hidden')) {
+        goToMain();
+        history.pushState({ game: true }, '');
+        return;
+    }
+
+    // 메인 메뉴에서는 앱 종료 방지 (히스토리 다시 추가)
+    if (!mainMenu.classList.contains('hidden')) {
+        history.pushState({ game: true }, '');
+        return;
+    }
+});
+
+resizeCanvas(); updateLanguage(currentLanguage); requestAnimationFrame(animate);
